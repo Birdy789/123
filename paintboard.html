@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    body {
+      height: 200px;
+      background: beige;
+    }
+
+    .dot {
+      height: 8px;
+      width: 8px;
+      border-radius: 4px;
+      /* rounds corners */
+      background: blue;
+      position: absolute;
+    }
+
+    svg {
+      width: 500px;
+      height: 500px;
+      border: 1px solid black;
+    }
+  </style>
+</head>
+
+<body>
+  <svg viewBox='0 0 500 500' xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/2000/xlink"></svg><br>
+
+  工具：<button onclick=" tool='line' ">Z</button> <button onclick=" tool='circle' ">O</button>
+  &nbsp;&nbsp;颜色：<input type="color" id="inputColor">
+  &nbsp;&nbsp;线条粗细：<input type="range" min="1" max="10" value='2' id="inputWidth">
+  <span class="line-width-value">2</span>
+  <button onclick="save()">保存</button>
+  <button onclick="openFile()">打开</button>
+  <input type="file" id="fileInput" accept=".svg" style="opacity: 0.7;">
+
+</body>
+<script>
+  var svg = document.querySelector('svg')
+  var lastpose = null
+  var tool = 'line'
+
+  var Nosave = false
+
+  /// 加粗细滚动 
+  var inputWidth = document.querySelector('#inputWidth') //
+  var widthNumber = document.querySelector('.line-width-value')
+
+  inputWidth.addEventListener('input', function (e) {  //change不会实时动
+    widthNumber.textContent = inputWidth.value
+  })
+
+  // 加撤销
+  document.addEventListener('keydown', function (e) {
+    Nosave = true
+    if (e.ctrlKey && e.key == 'z') {
+      if (svg.lastElementChild) {
+        svg.removeChild(svg.lastElementChild)
+      }
+    }
+
+    // if (e.ctrlKey && e.key == 'z') {
+    //   if (svg.lastElementChild) {
+    //     var nowbihua = svg.lastElementChild.dataset.bihua
+    //     while (svg.lastElementChild && svg.lastElementChild.dataset.bihua == nowbihua) {
+    //       svg.removeChild(svg.lastElementChild)
+    //     }
+    //   }
+    // }
+  })
+
+  //画线
+  svg.addEventListener("mousedown", function (event) {
+    Nosave = true
+
+    if (tool == 'line') {
+      var pos = mousepos(svg)
+      var polyline = document.createElementNS("http://www.w3.org/2000/svg", 'polyline')
+
+      polyline.setAttribute('fill', 'none')
+      polyline.setAttribute('stroke', inputColor.value)
+      polyline.setAttribute('stroke-width', inputWidth.value)
+      polyline.setAttribute('stroke-linecap', 'round')
+      polyline.setAttribute('stroke-linejoin', 'round')
+
+      svg.append(polyline)
+      var points = `${pos.x} ${pos.y} `
+      polyline.setAttribute('points', points)
+
+      function drawdot(event) {
+        var pos = mousepos(svg) //让点是相对于svg的那个框，而不是相对于窗口
+
+        var line = document.createElementNS("http://www.w3.org/2000/svg", 'line') //相对于("SVG", 'line'),用那个网址标准比较兼容
+        points += `${pos.x} ${pos.y} `
+        polyline.setAttribute('points', points)
+
+      }
+
+      addEventListener('mousemove', drawdot)
+      addEventListener('mouseup', function once() {
+        lastpose = null
+        removeEventListener('mouseup', once)
+        removeEventListener('mousemove', drawdot)
+
+      })
+    }
+
+    if (tool == 'circle') {
+      var ellipse = document.createElementNS("http://www.w3.org/2000/svg", 'ellipse')
+      svg.append(ellipse)
+      ellipse.setAttribute('stroke', inputColor.value)
+      ellipse.setAttribute('stroke-width', inputWidth.value)
+      ellipse.setAttribute('fill', 'none')
+
+      var startPos = mousepos(svg)
+
+      function drawEllipse() {
+        var currPos = mousepos(svg)
+        var cx = (startPos.x + currPos.x) / 2
+        var cy = (startPos.y + currPos.y) / 2
+        ellipse.setAttribute('cx', cx)
+        ellipse.setAttribute('cy', cy)
+        var rx = Math.abs(startPos.x - currPos.x) / 2
+        var ry = Math.abs(startPos.y - currPos.y) / 2
+        ellipse.setAttribute('rx', rx)
+        ellipse.setAttribute('ry', ry)
+
+      }
+      document.addEventListener('mousemove', drawEllipse)
+      document.addEventListener('mouseup', function once() {
+        document.removeEventListener('mouseup', once)
+        document.removeEventListener('mousemove', drawEllipse)
+      })
+    }
+
+    console.log(svg)
+  });
+  function mousepos(node) {
+    var box = node.getBoundingClientRect()
+
+    return {
+      x: window.event.clientX - box.x,
+      y: window.event.clientY - box.y
+    }
+  }
+
+  //保存
+  function save() {
+    Nosave = false
+    var svgsource = svg.outerHTML
+    var blob = new Blob(['<?xml version="1.0" encoding="utf-8"?>', svgsource], { type: 'image/xml+svg' })
+    var url = URL.createObjectURL(blob)
+    var anchor = document.createElement('a') //创建一个下载链接
+    anchor.href = url
+    anchor.download = '555.svg'
+    anchor.click()
+  }
+  //打开文件
+  function openFile() {
+    if (Nosave) {
+      var answer = confirm('当前绘画未保存，确定要打开新文件吗？')
+      if (answer == false) {
+        return
+      }
+    }
+
+    fileInput.click()
+  }
+
+  fileInput.addEventListener('change', e => {
+    var svgfile = fileInput.files[0]
+    var fr = new FileReader()
+
+    fr.addEventListener('load', () => {
+      svg.innerHTML = fr.result
+    })
+    fr.readAsText(svgfile)
+  })
+
+
+
+  window.addEventListener('beforeunload', e => {
+    if (Nosave) {
+      return e.returnValue = '还未保存，是否要退出?'
+    }
+  })
+
+</script>
+
+</html>

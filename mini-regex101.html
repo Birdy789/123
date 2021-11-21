@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>110</title>
+    <style>
+        input[type="text"],
+        textarea {
+            width: 500px;
+        }
+
+        textarea {
+            margin-top: 20px;
+            font-size: large;
+        }
+
+        span {
+            background-color: rgb(226, 122, 122);
+            font-style: normal;
+        }
+
+        span:empty {
+            border-right: 1px dotted red;
+            margin-right: -1px;
+            background-color: transparent;
+        }
+
+        #errorMsg:empty {
+            border-right: 1px dotted white;
+        }
+
+        span:nth-of-type(even) {
+            background-color: #d5ebff;
+        }
+
+        section {
+            margin-top: 10px;
+            width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        section textarea,
+        section .res,
+        section div {
+            line-height: 1.3;
+            display: block;
+            padding: 5px;
+            border: 2px solid;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: consolas;
+            font-size: 16px;
+            white-space: pre-wrap;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            word-break: break-all;
+        }
+
+        section .res {
+            color: transparent;
+            position: absolute;
+            top: 0;
+        }
+
+        section textarea {
+            position: relative;
+            z-index: 8;
+            background-color: transparent;
+        }
+
+        .erMsg {
+            width: 300px;
+            height: 10px;
+        }
+
+        #inplacement {
+            margin-top: 10px;
+            width: 495px;
+        }
+
+        #replaceresult {
+            height: 218px;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <input type="text" id="regex" oninput="run()" value="foo" placeholder="inser your regular express"><br>
+
+        <label><input type="checkbox" id="ignoreCase" onclick="run(), inplace()">i</label>
+        <label><input type="checkbox" id="global" onclick="run() , inplace()">g</label>
+        <label><input type="checkbox" id="multiline" onclick="run(),, inplace()">m</label> <br>
+
+        <span id="errorMsg" class="erMsg"></span>
+        <section>
+            <textarea name="" id="strInput" oninput="run()" onscroll="setScroll()" cols="50" rows="10">
+foofoofooofoooofoo dfsgfdgvfxv
+             </textarea>
+            <div class='res' id="result">
+            </div>
+        </section>
+
+        <!-- replace -->
+        <input type="text" id="inplacement" oninput="inplace()" value="" placeholder="inser your inplacement"><br>
+        <section>
+            <div id="replaceresult">
+            </div>
+
+        </section>
+
+    </div>
+    <script>
+        function run() {
+            var regsorce = regex.value
+            var flags = getflags()
+            if (regsorce == '') {
+                result.innerHTML = ''
+                errorMsg.innerHTML = 'Please input any regular exrpession.'
+                return
+            }
+            // if (regsorce) {
+            //     errorMsg.innerHTML = ''
+            // }
+            try {
+                var reg = new RegExp(regsorce, flags)
+                errorMsg.innerHTML = ''
+            } catch (e) {
+                console.log(e)
+                errorMsg.innerHTML = e.message
+                result.innerHTML = ''
+                return
+
+            }
+
+            console.log(reg)
+            var str = strInput.value
+            var match
+            if (reg.global) { // global
+                var resulthtml = ''
+                var lastIndex = reg.lastIndex
+                while (match = reg.exec(str)) {
+                    resulthtml += str.slice(lastIndex, match.index)
+                    resulthtml += '<span>' + match[0] + '</span>'
+                    lastIndex = reg.lastIndex
+
+                    if (match[0] == '') {
+                        reg.lastIndex++
+                    }
+                    // if (!match[0].length) {
+                    //     reg.lastIndex++;
+                    // }
+
+                }
+                resulthtml += str.slice(lastIndex)
+                result.innerHTML = resulthtml
+
+            } else {
+                var resulthtml = '' // no global
+                match = reg.exec(str)
+                resulthtml += str.slice(0, match.index)
+                resulthtml += '<span>' + match[0] + '</span>'
+                resulthtml += str.slice(match[0].length + match.index)
+                result.innerHTML = resulthtml
+            }
+
+
+        }
+        run()
+
+        function getflags() {
+            var flags = ''
+            if (ignoreCase.checked) {
+                flags += "i"
+            }
+            if (global.checked) {
+                flags += "g"
+            }
+            if (multiline.checked) {
+                flags += "m"
+            }
+
+            return flags
+
+        }
+
+        function setScroll() {
+            var scrollTop = strInput.scrollTop
+            result.scrollTop = scrollTop
+        }
+
+        // inplace  stringObject.replace(regexp/substr,replacement)
+        function inplace() {
+            console.log(inplacement.value)
+            var inplacementss = inplacement.value
+            if (inplacementss == '') {
+                replaceresult.innerHTML = str
+            }
+            var str = strInput.value
+
+            var regsorce = regex.value
+            var flags = getflags()
+            var reg = new RegExp(regsorce, flags)
+
+            var represult = str.replace(reg, inplacementss)
+
+            replaceresult.innerHTML = represult
+
+
+        }
+
+
+    </script>
+</body>
+
+</html>
